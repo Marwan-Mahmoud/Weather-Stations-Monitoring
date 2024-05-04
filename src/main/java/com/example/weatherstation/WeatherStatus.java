@@ -3,11 +3,11 @@ package com.example.weatherstation;
 import java.util.Random;
 
 public class WeatherStatus {
-    long station_id;
-    long s_no;              // auto-incremental with each message per service
-    String battery_status;  // (low, medium, high)
-    long status_timestamp;  // Unix timestamp
-    Weather weather;
+    private long station_id;
+    private long s_no;              // auto-incremental with each message per service
+    private String battery_status;  // (low, medium, high)
+    private long status_timestamp;  // Unix timestamp
+    private Weather weather;
 
     public WeatherStatus(long station_id, long s_no, Weather weather) {
         this.station_id = station_id;
@@ -26,5 +26,25 @@ public class WeatherStatus {
             return "MEDIUM";
         else
             return "HIGH";
+    }
+
+    public long getStationId() {
+        return station_id;
+    }
+
+    public long getSerialNo() {
+        return s_no;
+    }
+
+    public String getBatteryStatus() {
+        return battery_status;
+    }
+
+    public long getStatusTimestamp() {
+        return status_timestamp;
+    }
+
+    public Weather getWeather() {
+        return weather;
     }
 }

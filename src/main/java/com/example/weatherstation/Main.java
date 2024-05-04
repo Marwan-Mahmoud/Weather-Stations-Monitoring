@@ -1,6 +1,7 @@
 package com.example.weatherstation;
 
 import java.util.Properties;
+import java.util.Random;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -27,15 +28,20 @@ public class Main {
         WeatherStation weatherStation = new WeatherStation(station_id);
         Producer<Long, String> producer = new KafkaProducer<>(props);
         Gson gson = new Gson();
+        Random rand = new Random();
         
+        // Generate weather status every second
         ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
         Runnable task = () -> {
-            String weatherStatusJson = gson.toJson(weatherStation.generateWeatherStatus());
-            ProducerRecord<Long, String> record = new ProducerRecord<>("weather", station_id, weatherStatusJson);
-            producer.send(record);
+            if (rand.nextInt(100) + 1 > 10) {  // Randomly drop messages on a 10% rate
+                String weatherStatusJson = gson.toJson(weatherStation.generateWeatherStatus());
+                ProducerRecord<Long, String> record = new ProducerRecord<>("weather", station_id, weatherStatusJson);
+                producer.send(record);
+            }
         };
         executor.scheduleAtFixedRate(task, 0, 1, TimeUnit.SECONDS);
 
+        // Gracefully shutdown the producer
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             executor.shutdown();
             producer.close();
