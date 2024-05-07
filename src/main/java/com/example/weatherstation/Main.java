@@ -37,6 +37,7 @@ public class Main {
                 String weatherStatusJson = gson.toJson(weatherStation.generateWeatherStatus());
                 ProducerRecord<Long, String> record = new ProducerRecord<>("weather", station_id, weatherStatusJson);
                 producer.send(record);
+                System.out.println("Sent message: " + weatherStatusJson);
             }
         };
         executor.scheduleAtFixedRate(task, 0, 1, TimeUnit.SECONDS);
