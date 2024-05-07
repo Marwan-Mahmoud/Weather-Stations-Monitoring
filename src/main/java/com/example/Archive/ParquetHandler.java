@@ -12,40 +12,53 @@ import org.apache.avro.generic.GenericData;
 import org.apache.hadoop.fs.Path;
 import org.apache.parquet.avro.AvroParquetWriter;
 import org.apache.parquet.hadoop.ParquetWriter;
+import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 
 import com.example.weatherstation.WeatherStatus;
 
 public class ParquetHandler {
     private final int BATCH_SIZE;
-    private HashMap<Long, Queue<WeatherStatus>> stationIdToBuffer;  // stationId --> buffer
-    private HashMap<Long, Integer> stationIdToBatchNumber;          // stationId --> batch number
+    private final Schema SCHEMA;
+    private HashMap<Long, Queue<WeatherStatus>> stationIdToBuffer; // stationId --> buffer
+    private HashMap<Long, Integer> stationIdToBatchNumber; // stationId --> batch number
+    private HashMap<Long, ParquetWriter<GenericData.Record>> stationIdToWriter; // stationId --> Parquet writer
     private String outputPath;
 
-    public ParquetHandler(int batchSize, String outputPath) {
+    public ParquetHandler(int batchSize, String outputPath) throws IOException {
         BATCH_SIZE = batchSize;
+        SCHEMA = new Schema.Parser().parse(new File("src/main/resources/avro.avsc"));
         this.outputPath = outputPath;
         stationIdToBuffer = new HashMap<>();
         stationIdToBatchNumber = new HashMap<>();
+        stationIdToWriter = new HashMap<>();
     }
 
     // Store the WeatherStatus object in a buffer
     public void storeRecordInBuffer(WeatherStatus weatherStatus) throws IOException {
         long stationId = weatherStatus.getStationId();
-        
+
         // Create buffer for station if it doesn't exist
         if (!stationIdToBuffer.containsKey(stationId)) {
             stationIdToBuffer.put(stationId, new LinkedList<>());
+            stationIdToBatchNumber.put(stationId, 1);
+            stationIdToWriter.put(stationId, createParquetWriter(stationId));
         }
+
         Queue<WeatherStatus> stationBuffer = stationIdToBuffer.get(stationId);
-        
+
         // Write Parquet file if buffer size exceeds BATCH_SIZE
         if (stationBuffer.size() >= BATCH_SIZE) {
+            // Write Parquet file
+            ParquetWriter<GenericData.Record> writer = stationIdToWriter.get(stationId);
+            writeParquet(writer, stationBuffer);
+            writer.close();
+
             // Update batch number
-            int currentBatchNumber = stationIdToBatchNumber.getOrDefault(stationId, 0);
+            int currentBatchNumber = stationIdToBatchNumber.get(stationId);
             stationIdToBatchNumber.put(stationId, currentBatchNumber + 1);
 
-            // Write Parquet file
-            writeParquet(stationId, stationBuffer, outputPath);
+            // Create new writer
+            stationIdToWriter.put(stationId, createParquetWriter(stationId));
 
             // Clear buffer
             stationBuffer.clear();
@@ -55,8 +68,36 @@ public class ParquetHandler {
     }
 
     // Write WeatherStatus objects to Parquet file
-    private void writeParquet(long stationId, Queue<WeatherStatus> weatherStatusQueue, String outputPath)
+    private void writeParquet(ParquetWriter<GenericData.Record> writer, Queue<WeatherStatus> weatherStatusQueue)
             throws IOException {
+        while (!weatherStatusQueue.isEmpty()) {
+            WeatherStatus weatherStatus = weatherStatusQueue.poll();
+            GenericData.Record record = createParquetRecord(weatherStatus, SCHEMA);
+            writer.write(record);
+        }
+    }
+
+    public void flushBuffers() throws IOException {
+        for (long stationId : stationIdToBuffer.keySet()) {
+            Queue<WeatherStatus> stationBuffer = stationIdToBuffer.get(stationId);
+            if (!stationBuffer.isEmpty()) {
+                ParquetWriter<GenericData.Record> writer = stationIdToWriter.get(stationId);
+                writeParquet(writer, stationBuffer);
+                writer.close();
+            }
+        }
+    }
+
+    private ParquetWriter<GenericData.Record> createParquetWriter(long stationId) throws IOException {
+        Path file = createParquetFile(stationId, outputPath);
+        ParquetWriter<GenericData.Record> writer = AvroParquetWriter.<GenericData.Record>builder(file)
+                .withSchema(SCHEMA)
+                .withCompressionCodec(CompressionCodecName.SNAPPY)
+                .build();
+        return writer;
+    }
+
+    private Path createParquetFile(long stationId, String outputPath) {
         createFolder(outputPath);
 
         LocalDate date = LocalDate.now();
@@ -66,22 +107,7 @@ public class ParquetHandler {
         // Generate Parquet file path
         int batchNumber = stationIdToBatchNumber.get(stationId);
         Path file = new Path(outputPath + "/output_" + stationId + "_" + batchNumber + ".parquet");
-
-        // Create Parquet writer
-        Schema schema = new Schema.Parser().parse(new File("src/main/resources/avro.avsc"));
-        try (ParquetWriter<GenericData.Record> writer = AvroParquetWriter.<GenericData.Record>builder(file)
-                .withSchema(schema)
-                .build()) {
-
-            // Write WeatherStatus objects to Parquet
-            while (!weatherStatusQueue.isEmpty()) {
-                WeatherStatus weatherStatus = weatherStatusQueue.poll();
-                GenericData.Record record = createParquetRecord(weatherStatus, schema);
-                writer.write(record);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        return file;
     }
 
     // Create Parquet record from WeatherStatus object

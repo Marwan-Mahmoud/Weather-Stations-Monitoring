@@ -23,13 +23,23 @@ public class Main {
         props.put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
 
         Gson gson = new Gson();
-        ParquetHandler archiver = new ParquetHandler(10, "archived_data");
 
         KafkaConsumer<Long, String> consumer = new KafkaConsumer<>(props);
         consumer.subscribe(Collections.singletonList("weather"));
 
-        // Start consuming messages
         try {
+            ParquetHandler archiver = new ParquetHandler(20, "archived_data");
+
+            // Flush buffers on shutdown
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                try {
+                    archiver.flushBuffers();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }));
+
+            // Start consuming messages
             while (true) {
                 ConsumerRecords<Long, String> records = consumer.poll(Duration.ofMillis(100));
                 for (ConsumerRecord<Long, String> record : records) {
