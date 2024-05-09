@@ -1,8 +1,11 @@
 package com.example.bitCask.helpers;
 
+import com.example.bitCask.models.ValueMetaData;
+
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.*;
+import java.util.Map;
 
 
 public class FileReader {
@@ -26,7 +29,14 @@ public class FileReader {
     }
 
     // Read whole data file and update the key to value map accordingly
-
-
-
+//    public static Map<Integer, byte[]> readAllFileEntries(String fileID, Map<Integer, ValueMetaData> keyToEntryMetaData) throws IOException {
+//        BufferedInputStream bufferedInputStream = new BufferedInputStream(new FileInputStream(databasePath + fileID));
+//        byte[] bytes = bufferedInputStream.readAllBytes();
+//
+//        Map<Integer, keyTo>
+//
+//    }
+    public static void setDatabasePath(String databasePath) {
+        FileReader.databasePath = databasePath;
+    }
 }
