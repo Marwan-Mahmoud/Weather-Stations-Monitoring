@@ -10,34 +10,56 @@ import java.nio.ByteBuffer;
 public class FileWriter {
     final int MAX_FILE_SIZE = 10;
     static String databasePath;
-    FileOutputStream fileOutputStream, fileOutputStreamHint, fileOutputStreamReplica;
-    File file, fileHint, fileReplica;
+    FileOutputStream fileOutputStream, fileOutputStreamReplica;
+    File file, fileReplica;
 
     public FileWriter(String databasePath){
         FileWriter.databasePath = databasePath;
         createNewFile();
     }
 
-
-    public PlaceMetaData writeToActiveFile(DataFileEntry dfe){
+    public PlaceMetaData writeToActiveFile(DataFileEntry dfe) throws FileNotFoundException {
         checkMaxSize();
         long valuePosition = write(file, fileOutputStream, fileOutputStreamReplica, dfe);
         return new PlaceMetaData(file.getName(), valuePosition);
     }
 
     public PlaceMetaData writeToCompactFile(DataFileEntry dfe, File file) throws FileNotFoundException {
-        File fileReplica = new File(databasePath + file.getName().split("\\.")[0] + ".replica");
+        String fileName = databasePath + file.getName().split("\\.")[0] + ".replica";
+        boolean noDelete = false;
+        if(file.getName().endsWith("z")) {
+            fileName += "z";
+            noDelete = true;
+        }
+        File fileReplica = new File(fileName);
 
         FileOutputStream compactFileOutputStream = new FileOutputStream(file, true);
         FileOutputStream compactFileOutputStreamReplica = new FileOutputStream(fileReplica, true);
 
         long valuePosition = write(file, compactFileOutputStream, compactFileOutputStreamReplica, dfe);
+//        writeToHintFile(file.getName(), new ValueMetaData(file.getName(), dfe.getValueSize(), valuePosition, dfe.getTimestamp()), dfe.getKey());
+        writeToHintFile(file.getName() + (noDelete ? "z": ""), new ValueMetaData(file.getName(), dfe.getValueSize(), valuePosition, dfe.getTimestamp()), dfe.getKey());
+
 
         return new PlaceMetaData(file.getName(), valuePosition);
     }
 
-    private void writeToHintFile(String fileName, ValueMetaData vmd, byte[] key){
-        BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(fileOutputStreamHint);
+    private void writeToHintFile(String fileName, ValueMetaData vmd, byte[] key) throws FileNotFoundException {
+        String hintName = databasePath + fileName.split("\\.")[0] + ".hint";
+        if(fileName.endsWith("z"))
+            hintName += "z";
+
+        File hintFile = new File(hintName);
+        if (!hintFile.exists()) {
+            try {
+                hintFile.createNewFile();
+            }
+            catch (IOException e) {
+                e.getCause();
+            }
+        }
+        FileOutputStream hintFileOutputStream = new FileOutputStream(hintFile, true);
+        BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(hintFileOutputStream);
 
         try {
             byte[] toBeWritten = vmd.ValueToBytes(key);
@@ -53,7 +75,7 @@ public class FileWriter {
         }
     }
 
-    private long write(File file, FileOutputStream fos, FileOutputStream rfos, DataFileEntry dfe){
+    private long write(File file, FileOutputStream fos, FileOutputStream rfos, DataFileEntry dfe) throws FileNotFoundException {
         BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(fos);
         BufferedOutputStream bufferedOutputStreamReplica = new BufferedOutputStream(rfos);
 
@@ -76,7 +98,7 @@ public class FileWriter {
         // [Timestamp(8 bytes)]-[KeySize(4 bytes)]-[ValueSize(4 bytes)]-[Key]- ***[Value]***
         long valuePositionInFile = file.length() + 8 + 4 + 4 + dfe.getKeySize();
 
-        writeToHintFile(file.getName(), new ValueMetaData(file.getName(), dfe.getValueSize(), valuePositionInFile, dfe.getTimestamp()), dfe.getKey());
+//        writeToHintFile(file.getName(), new ValueMetaData(file.getName(), dfe.getValueSize(), valuePositionInFile, dfe.getTimestamp()), dfe.getKey());
 
         try {
             bufferedOutputStream.write(toBeWritten);
@@ -95,12 +117,10 @@ public class FileWriter {
         long currentTime = System.currentTimeMillis();
         this.file = new File(databasePath + currentTime + ".data");
         this.fileReplica = new File(databasePath + currentTime + ".replica");
-        this.fileHint = new File(databasePath + currentTime + ".hint");
 
         try {
             this.fileOutputStream = new FileOutputStream(this.file, true);
             this.fileOutputStreamReplica = new FileOutputStream(this.fileReplica, true);
-            this.fileOutputStreamHint = new FileOutputStream(this.fileHint, true);
         }
         catch (Exception e) {
             System.out.println("Error Opening file");

@@ -15,7 +15,7 @@ public class ValueMetaData {
         this.timestamp = timestamp;
     }
 
-    public ValueMetaData BytesToValue(byte[] bytes, String fileID) {
+    public static ValueMetaData BytesToValue(byte[] bytes, String fileID) {
         ByteBuffer buffer = ByteBuffer.wrap(bytes);
         long timestamp = buffer.getLong();
         int keySize = buffer.getInt();
@@ -50,5 +50,9 @@ public class ValueMetaData {
 
     public long getTimestamp() {
         return timestamp;
+    }
+
+    public void setFileID(String fileID) {
+        this.fileID = fileID;
     }
 }
