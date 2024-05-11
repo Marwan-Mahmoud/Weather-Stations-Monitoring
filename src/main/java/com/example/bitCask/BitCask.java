@@ -89,6 +89,8 @@ public class BitCask {
         File renamedCompactedDataFile = new File(compactedDataFileName.substring(0, compactedDataFileName.length() - 1));
         compactedDataFile.renameTo(renamedCompactedDataFile);
 
+        updateKeyDir(newKeyDir, renamedCompactedDataFile);
+
         File renamedCompactedReplicaFile = new File(compactedReplicaFileName.substring(0, compactedReplicaFileName.length() - 1));
         compactedReplicaFile.renameTo(renamedCompactedReplicaFile);
 
@@ -98,7 +100,7 @@ public class BitCask {
         File renamedCompactedHintFile = new File(hintFileName.substring(0, hintFileName.length() - 1));
         hintFile.renameTo(renamedCompactedHintFile);
 
-        updateKeyDir(newKeyDir, renamedCompactedDataFile);
+
         System.out.println("Compaction Process Completed");
     }
 

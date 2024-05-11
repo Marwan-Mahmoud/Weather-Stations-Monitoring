@@ -1,69 +1,83 @@
 package com.example.bitCask;
 
-import com.example.bitCask.models.ValueMetaData;
-
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.Map;
+import java.nio.charset.StandardCharsets;
+import java.util.Random;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class Main {
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
         BitCask bitCask = new BitCask();
         bitCask.open("./database/");
 
-//        int key = 1;
-//        String value = "Temp123456789123456789123456789123456789123456789123456789123456789123456789123456789123456789123456789123456789";
-//        bitCask.put(ByteBuffer.allocate(Integer.BYTES).putInt(key).array(), value.getBytes());
-//
-//        byte[] retrievedValue = bitCask.get(ByteBuffer.allocate(Integer.BYTES).putInt(key).array());
-//        if(Arrays.toString(value.getBytes()).equals(Arrays.toString(retrievedValue)))
-//            System.out.println("Test passed");
-//        else
-//            System.out.println("Test failed");
-//
-//
-//        key = 2;
-//        value = "Temp2123456789123456789123456789123456789123456789123456789";
-//        bitCask.put(ByteBuffer.allocate(Integer.BYTES).putInt(key).array(), value.getBytes());
-//
-//        retrievedValue = bitCask.get(ByteBuffer.allocate(Integer.BYTES).putInt(key).array());
-//        if(Arrays.toString(value.getBytes()).equals(Arrays.toString(retrievedValue)))
-//            System.out.println("Test passed");
-//        else
-//            System.out.println("Test failed");
-//
-//        bitCask.compact();
-//
-//        Map<Integer, ValueMetaData> keyDir = bitCask.getKeyDir();
-//        for(Map.Entry<Integer, ValueMetaData> entry : keyDir.entrySet()){
-//            System.out.println(entry.getKey() + " : " + entry.getValue().getFileID());
-//        }
+        ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1);
+        scheduledExecutorService.scheduleAtFixedRate(() -> {
+            try {
+                bitCask.compact();
+            }
+            catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }, 20, 20, TimeUnit.SECONDS);
 
-//        bitCask.compact();
-//
-//         keyDir = bitCask.getKeyDir();
-//        for(Map.Entry<Integer, ValueMetaData> entry : keyDir.entrySet()){
-//            System.out.println(entry.getKey() + " : " + entry.getValue().getFileID());
-//        }
+        // Simulate multiple readers
+        for (int i = 0; i < 3; i++) {
+            new Thread(() -> {
+                while (true) {
+                    int r = new Random().nextInt(10) + 1;
+                    ByteBuffer key = ByteBuffer.allocate(Integer.BYTES).putInt(r);
+                    byte[] byteKey = key.array();
+                    byte[] value = bitCask.get(byteKey);
 
+                    if(value != null) {
+                        System.out.println("Read Key: " + r + " read value: ");
+                        for(byte b : value) {
+                            System.out.print(b);
+                        }
+                        System.out.println();
+                    }
+                    else
+                        System.out.println("Key " + r + " not found");
 
-        Map<Integer, ValueMetaData> keyDir = bitCask.getKeyDir();
-        for(Map.Entry<Integer, ValueMetaData> entry : keyDir.entrySet()){
-            System.out.println(entry.getKey() + " : " + entry.getValue().getFileID());
+                    try {
+                        Thread.sleep(10000);
+                    }
+                    catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }).start();
         }
-        byte[] retrievedValue = bitCask.get(ByteBuffer.allocate(Integer.BYTES).putInt(1).array());
-        if(Arrays.toString("Temp123456789123456789123456789123456789123456789123456789123456789123456789123456789123456789123456789123456789".getBytes()).equals(Arrays.toString(retrievedValue)))
-            System.out.println("Test passed");
-        else
-            System.out.println("Test failed");
 
-        retrievedValue = bitCask.get(ByteBuffer.allocate(Integer.BYTES).putInt(2).array());
-        if(Arrays.toString("Temp2123456789123456789123456789123456789123456789123456789".getBytes()).equals(Arrays.toString(retrievedValue)))
-            System.out.println("Test passed");
-        else
-            System.out.println("Test failed");
-        
+        // Simulate a single writer
+        new Thread(() -> {
+            while (true) {
+                int r = new Random().nextInt(10) + 1;
+                ByteBuffer key = ByteBuffer.allocate(Integer.BYTES).putInt(r);
+                byte[] byteKey = key.array();
+
+                try {
+                    bitCask.put(byteKey, byteKey);
+                }
+                catch (FileNotFoundException e) {
+                    throw new RuntimeException(e);
+                }
+
+                System.out.println("Writer wrote a value " + r + " to key " + r);
+                for(byte b : byteKey)
+                    System.out.print(b);
+                System.out.println();
+                try {
+                    Thread.sleep(5000); // Simulate writer's work
+                }
+                catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }).start();
     }
 }
