@@ -26,10 +26,10 @@ public class FileWriter {
 
     public PlaceMetaData writeToCompactFile(DataFileEntry dfe, File file) throws FileNotFoundException {
         String fileName = databasePath + file.getName().split("\\.")[0] + ".replica";
-        boolean noDelete = false;
+//        boolean noDelete = false;
         if(file.getName().endsWith("z")) {
             fileName += "z";
-            noDelete = true;
+//            noDelete = true;
         }
         File fileReplica = new File(fileName);
 
@@ -37,9 +37,8 @@ public class FileWriter {
         FileOutputStream compactFileOutputStreamReplica = new FileOutputStream(fileReplica, true);
 
         long valuePosition = write(file, compactFileOutputStream, compactFileOutputStreamReplica, dfe);
-//        writeToHintFile(file.getName(), new ValueMetaData(file.getName(), dfe.getValueSize(), valuePosition, dfe.getTimestamp()), dfe.getKey());
-        writeToHintFile(file.getName() + (noDelete ? "z": ""), new ValueMetaData(file.getName(), dfe.getValueSize(), valuePosition, dfe.getTimestamp()), dfe.getKey());
-
+        writeToHintFile(file.getName(), new ValueMetaData(file.getName().substring(0, file.getName().length() - 1), dfe.getValueSize(), valuePosition, dfe.getTimestamp()), dfe.getKey());
+//        writeToHintFile(file.getName() + (noDelete ? "z": ""), new ValueMetaData(file.getName(), dfe.getValueSize(), valuePosition, dfe.getTimestamp()), dfe.getKey());
 
         return new PlaceMetaData(file.getName(), valuePosition);
     }
@@ -63,14 +62,18 @@ public class FileWriter {
 
         try {
             byte[] toBeWritten = vmd.ValueToBytes(key);
+            ValueMetaData test = ValueMetaData.BytesToValue(toBeWritten, fileName);
+            System.out.println("Writing to hint file " + "Key: " + ByteBuffer.wrap(key).getInt() + " time: " + test.getTimestamp()+ " " + "fileID " + test.getFileID());
             int sz = toBeWritten.length;
             ByteBuffer buffer = ByteBuffer.allocate(Integer.BYTES);
             buffer.putInt(sz);
-            bufferedOutputStream.write(sz);
+            byte[] byteArray = buffer.array();
+            bufferedOutputStream.write(byteArray);
             bufferedOutputStream.write(toBeWritten);
             bufferedOutputStream.flush();
         }
         catch (IOException e) {
+            System.out.println("Failed to write to hint file");
             e.getCause();
         }
     }

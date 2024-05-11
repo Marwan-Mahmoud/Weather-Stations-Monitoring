@@ -23,6 +23,10 @@ public class FileReader {
         BufferedInputStream bufferedInputStream = new BufferedInputStream(new FileInputStream(hintFile));
         byte[] bytes = bufferedInputStream.readAllBytes();
 
+        for(byte b : bytes){
+            System.out.print(b + " ");
+        }
+        System.out.println();
         int currentPosition = 0;
         while (currentPosition < bytes.length) {
             int entrySize = ByteBuffer.wrap(Arrays.copyOfRange(bytes, currentPosition, currentPosition + 4)).getInt();
@@ -32,8 +36,7 @@ public class FileReader {
 
             currentPosition += 4 + entrySize;
             ValueMetaData currentEntryMetaData = ValueMetaData.BytesToValue(currentEntry, hintFile.getName().split("\\.")[0] + ".data");
-
-            System.out.println("Key: " + key + " rob3: " + currentEntryMetaData.getTimestamp() + " " + currentEntryMetaData.getFileID() + " " + currentEntryMetaData.getValueSize());
+            System.out.println("Read hint file" + "Key: " + key + " time: " + currentEntryMetaData.getTimestamp() + "fileID " + currentEntryMetaData.getFileID());
             // Map doesn't contain the entry or contains an entry with a lower timestamp (outdated)
             if(!keyDir.containsKey(key) || keyDir.get(key).getTimestamp() <= currentEntryMetaData.getTimestamp()){
                 keyDir.put(key, currentEntryMetaData);

@@ -84,7 +84,6 @@ public class BitCask {
         compactedDataFile.createNewFile();
 
         writeCompactedFiles(newKeyDir, keyToValue, compactedDataFile);
-        System.out.println(Arrays.toString(new java.io.File("./database/").list()));
         deleteFilesAfterCompaction(files, activeFileName);
 
         File renamedCompactedDataFile = new File(compactedDataFileName.substring(0, compactedDataFileName.length() - 1));
