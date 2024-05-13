@@ -23,7 +23,10 @@ public class TestCase {
         getTester(bitCask, k1, v1);
         getTester(bitCask, k2, v2);
         getTester(bitCask, k3, v3);
-        
+
+        putAndGetTester(bitCask, k1, v3);
+        getTester(bitCask,k3,v3);
+        getTester(bitCask, k1,v3);
     }
 
     private static void putAndGetTester(BitCask bitCask, int key, String value) throws IOException {

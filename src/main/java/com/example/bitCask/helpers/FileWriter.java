@@ -8,7 +8,7 @@ import java.io.*;
 import java.nio.ByteBuffer;
 
 public class FileWriter {
-    final int MAX_FILE_SIZE = 512;
+    final int MAX_FILE_SIZE = 64;
     static String databasePath;
     FileOutputStream fileOutputStream, fileOutputStreamReplica;
     File file, fileReplica;
@@ -26,11 +26,9 @@ public class FileWriter {
 
     public PlaceMetaData writeToCompactFile(DataFileEntry dfe, File file) throws FileNotFoundException {
         String fileName = databasePath + file.getName().split("\\.")[0] + ".replica";
-//        boolean noDelete = false;
-        if(file.getName().endsWith("z")) {
+        if(file.getName().endsWith("z"))
             fileName += "z";
-//            noDelete = true;
-        }
+
         File fileReplica = new File(fileName);
 
         FileOutputStream compactFileOutputStream = new FileOutputStream(file, true);
@@ -38,7 +36,6 @@ public class FileWriter {
 
         long valuePosition = write(file, compactFileOutputStream, compactFileOutputStreamReplica, dfe);
         writeToHintFile(file.getName(), new ValueMetaData(file.getName().substring(0, file.getName().length() - 1), dfe.getValueSize(), valuePosition, dfe.getTimestamp()), dfe.getKey());
-//        writeToHintFile(file.getName() + (noDelete ? "z": ""), new ValueMetaData(file.getName(), dfe.getValueSize(), valuePosition, dfe.getTimestamp()), dfe.getKey());
 
         return new PlaceMetaData(file.getName(), valuePosition);
     }

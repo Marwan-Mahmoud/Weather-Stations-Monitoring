@@ -3,16 +3,18 @@ package com.example.bitCask;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+
 
 public class Main {
     public static void main(String[] args) {
         BitCask bitCask = new BitCask();
         bitCask.open("./database/");
+        String[] testArray = new String[11];
+        Arrays.fill(testArray, "");
 
         ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1);
         scheduledExecutorService.scheduleAtFixedRate(() -> {
@@ -22,23 +24,25 @@ public class Main {
             catch (IOException e) {
                 throw new RuntimeException(e);
             }
-        }, 20, 20, TimeUnit.SECONDS);
+        }, 15, 15, TimeUnit.SECONDS);
 
         // Simulate multiple readers
         for (int i = 0; i < 3; i++) {
             new Thread(() -> {
                 while (true) {
                     int r = new Random().nextInt(10) + 1;
-                    ByteBuffer key = ByteBuffer.allocate(Integer.BYTES).putInt(r);
-                    byte[] byteKey = key.array();
-                    byte[] value = bitCask.get(byteKey);
+                    byte[] key = ByteBuffer.allocate(Integer.BYTES).putInt(r).array();
+
+                    byte[] value = bitCask.get(key);
+                    String originalValue = testArray[r];
 
                     if(value != null) {
-                        System.out.println("Read Key: " + r + " read value: ");
-                        for(byte b : value) {
-                            System.out.print(b);
+                        if(Arrays.toString(originalValue.getBytes()).equals(Arrays.toString(value)))
+                            System.out.println("Read value for Key " + r + " correctly");
+                        else {
+                            System.out.println("Read value for Key " + r + " incorrectly");
+                            System.out.println("Expected " + originalValue);
                         }
-                        System.out.println();
                     }
                     else
                         System.out.println("Key " + r + " not found");
@@ -57,22 +61,34 @@ public class Main {
         new Thread(() -> {
             while (true) {
                 int r = new Random().nextInt(10) + 1;
-                ByteBuffer key = ByteBuffer.allocate(Integer.BYTES).putInt(r);
-                byte[] byteKey = key.array();
+                byte[] key = ByteBuffer.allocate(Integer.BYTES).putInt(r).array();
+
+                // value
+                int length = 20;
+                String characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+                Random random = new Random();
+                StringBuilder stringBuilder = new StringBuilder(length);
+
+                for (int i = 0; i < length; i++) {
+                    int randomIndex = random.nextInt(characters.length());
+                    stringBuilder.append(characters.charAt(randomIndex));
+                }
+
+                String randomString = stringBuilder.toString();
 
                 try {
-                    bitCask.put(byteKey, byteKey);
+                    bitCask.put(key, randomString.getBytes());
                 }
                 catch (FileNotFoundException e) {
                     throw new RuntimeException(e);
                 }
 
-                System.out.println("Writer wrote a value " + r + " to key " + r);
-                for(byte b : byteKey)
-                    System.out.print(b);
-                System.out.println();
+                System.out.println("Writer wrote a value " + randomString + " to key " + r);
+                testArray[r] = randomString;
+
                 try {
-                    Thread.sleep(5000); // Simulate writer's work
+                    Thread.sleep(10000); // Simulate writer's work
                 }
                 catch (InterruptedException e) {
                     e.printStackTrace();
