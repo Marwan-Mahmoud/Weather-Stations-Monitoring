@@ -16,7 +16,7 @@ import com.google.gson.Gson;
 public class Main {
     public static void main(String[] args) {
         Properties props = new Properties();
-        props.put("bootstrap.servers", "localhost:9092");
+        props.put("bootstrap.servers", "kafka:9092");
         props.put("group.id", "central-station");
         props.put("enable.auto.commit", "true");
         props.put("key.deserializer", "org.apache.kafka.common.serialization.LongDeserializer");

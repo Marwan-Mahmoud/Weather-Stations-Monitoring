@@ -21,7 +21,7 @@ public class Main {
         long station_id = Long.parseLong(args[0]);
 
         Properties props = new Properties();
-        props.put("bootstrap.servers", "localhost:9092");
+        props.put("bootstrap.servers", "kafka:9092");
         props.put("key.serializer", "org.apache.kafka.common.serialization.LongSerializer");
         props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
 
@@ -33,8 +33,9 @@ public class Main {
         // Generate weather status every second
         ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
         Runnable task = () -> {
+            WeatherStatus weatherStatus = weatherStation.generateWeatherStatus();
             if (rand.nextInt(100) + 1 > 10) {  // Randomly drop messages on a 10% rate
-                String weatherStatusJson = gson.toJson(weatherStation.generateWeatherStatus());
+                String weatherStatusJson = gson.toJson(weatherStatus);
                 ProducerRecord<Long, String> record = new ProducerRecord<>("weather", station_id, weatherStatusJson);
                 producer.send(record);
                 System.out.println("Sent message: " + weatherStatusJson);

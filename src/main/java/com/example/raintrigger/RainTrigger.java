@@ -3,6 +3,7 @@ package com.example.raintrigger;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 
 import org.apache.kafka.streams.processor.api.Processor;
 import org.apache.kafka.streams.processor.api.ProcessorContext;
@@ -29,10 +30,15 @@ public class RainTrigger implements Processor<Long, String, Long, String> {
         Weather weather = weatherStatus.getWeather();
 
         long timestamp = weatherStatus.getStatusTimestamp();
-        LocalDateTime localDateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneId.systemDefault());        
+        LocalDateTime dateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneId.systemDefault());        
 
-        if (weather.getHumidity() > 70)
-            context.forward(record.withValue(localDateTime + "   Raining!"));
+        if (weather.getHumidity() > 70) {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+            String formattedDateTime = dateTime.format(formatter);
+            String message = String.format("%s, station %d - Raining!", formattedDateTime, weatherStatus.getStationId());
+            System.out.println(message);
+            context.forward(record.withValue(message));
+        }
     }
 
     @Override

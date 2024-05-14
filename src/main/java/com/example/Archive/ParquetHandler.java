@@ -26,7 +26,7 @@ public class ParquetHandler {
 
     public ParquetHandler(int batchSize, String outputPath) throws IOException {
         BATCH_SIZE = batchSize;
-        SCHEMA = new Schema.Parser().parse(new File("src/main/resources/avro.avsc"));
+        SCHEMA = new Schema.Parser().parse(new File("avro.avsc"));
         this.outputPath = outputPath;
         stationIdToBuffer = new HashMap<>();
         stationIdToBatchNumber = new HashMap<>();
