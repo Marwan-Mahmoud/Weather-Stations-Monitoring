@@ -12,7 +12,7 @@ public class CentralStation {
     private ElasticsearchHandler esHandler;
 
     public CentralStation() throws IOException {
-        archiver = new ParquetHandler(20, "archived_data", (path) -> {
+        archiver = new ParquetHandler(100, "archived_data", (path) -> {
             try {
                 indexWeatherStatuses(path);
             } catch (IOException e) {
@@ -21,10 +21,10 @@ public class CentralStation {
         });
         esHandler = new ElasticsearchHandler();
 
-        // Flush buffers on shutdown
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try {
                 archiver.flushBuffers();
+                esHandler.close();
             } catch (Exception e) {
                 e.printStackTrace();
             }

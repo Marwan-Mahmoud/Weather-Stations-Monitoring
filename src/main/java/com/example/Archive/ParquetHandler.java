@@ -53,6 +53,9 @@ public class ParquetHandler {
 
         Queue<WeatherStatus> stationBuffer = stationIdToBuffer.get(stationId);
 
+        // Add WeatherStatus object to buffer
+        stationBuffer.add(weatherStatus);
+
         // Write Parquet file if buffer size exceeds BATCH_SIZE
         if (stationBuffer.size() >= BATCH_SIZE) {
             // Write Parquet file
@@ -72,8 +75,6 @@ public class ParquetHandler {
             // Clear buffer
             stationBuffer.clear();
         }
-        // Add WeatherStatus object to buffer
-        stationBuffer.add(weatherStatus);
     }
 
     public List<WeatherStatus> readParquetFile(String path) throws IOException {
@@ -125,7 +126,7 @@ public class ParquetHandler {
         createFolder(outputPath);
 
         LocalDate date = LocalDate.now();
-        outputPath = outputPath + "/date=" + date + "/station_id=" + stationId;
+        outputPath = outputPath + "/" + date + "/station_" + stationId;
         createFolder(outputPath);
 
         // Generate Parquet file path

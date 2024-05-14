@@ -1,5 +1,6 @@
 package com.example.elasticsearch;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.List;
 
@@ -15,7 +16,7 @@ import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.ElasticsearchTransport;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 
-public class ElasticsearchHandler {
+public class ElasticsearchHandler implements Closeable {
 
     private static final String SERVER_URL = "http://elastic-kibana:9200";
     private RestClient restClient;
@@ -50,6 +51,7 @@ public class ElasticsearchHandler {
         esClient.bulk(br.build());
     }
 
+    @Override
     public void close() throws IOException {
         restClient.close();
     }

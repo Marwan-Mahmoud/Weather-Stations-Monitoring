@@ -21,16 +21,17 @@ public class Main {
         props.put("key.deserializer", "org.apache.kafka.common.serialization.LongDeserializer");
         props.put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
 
-        Gson gson = new Gson();
         KafkaConsumer<Long, String> consumer = new KafkaConsumer<>(props);
         consumer.subscribe(Collections.singletonList("weather"));
-        
+
+        Gson gson = new Gson();
+
         try {
             CentralStation centralStation = new CentralStation();
 
             // Start consuming messages
             while (true) {
-                ConsumerRecords<Long, String> records = consumer.poll(Duration.ofMillis(100));
+                ConsumerRecords<Long, String> records = consumer.poll(Duration.ofMillis(1000));
                 for (ConsumerRecord<Long, String> record : records) {
                     System.out.println("Received message: " + record.value());
                     WeatherStatus weatherStatus = gson.fromJson(record.value(), WeatherStatus.class);
