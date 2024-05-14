@@ -5,15 +5,19 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Queue;
 
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.hadoop.fs.Path;
 import org.apache.parquet.avro.AvroParquetWriter;
+import org.apache.parquet.avro.AvroReadSupport;
+import org.apache.parquet.hadoop.ParquetReader;
 import org.apache.parquet.hadoop.ParquetWriter;
 import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 
+import com.example.weatherstation.Weather;
 import com.example.weatherstation.WeatherStatus;
 
 public class ParquetHandler {
@@ -67,6 +71,21 @@ public class ParquetHandler {
         stationBuffer.add(weatherStatus);
     }
 
+    public List<WeatherStatus> readParquetFile(String path) throws IOException {
+        LinkedList<WeatherStatus> weatherStatusList = new LinkedList<>();
+
+        Path file = new Path(path);
+        ParquetReader<GenericData.Record> reader = ParquetReader.builder(new AvroReadSupport<GenericData.Record>(), file).build();
+        GenericData.Record record;
+        while ((record = reader.read()) != null) {
+            WeatherStatus weatherStatus = createWeatherStatus(record);
+            weatherStatusList.add(weatherStatus);
+        }
+        reader.close();
+
+        return weatherStatusList;
+    }
+
     // Write WeatherStatus objects to Parquet file
     private void writeParquet(ParquetWriter<GenericData.Record> writer, Queue<WeatherStatus> weatherStatusQueue)
             throws IOException {
@@ -89,7 +108,7 @@ public class ParquetHandler {
     }
 
     private ParquetWriter<GenericData.Record> createParquetWriter(long stationId) throws IOException {
-        Path file = createParquetFile(stationId, outputPath);
+        Path file = getParquetFile(stationId, outputPath);
         ParquetWriter<GenericData.Record> writer = AvroParquetWriter.<GenericData.Record>builder(file)
                 .withSchema(SCHEMA)
                 .withCompressionCodec(CompressionCodecName.SNAPPY)
@@ -97,7 +116,7 @@ public class ParquetHandler {
         return writer;
     }
 
-    private Path createParquetFile(long stationId, String outputPath) {
+    private Path getParquetFile(long stationId, String outputPath) {
         createFolder(outputPath);
 
         LocalDate date = LocalDate.now();
@@ -124,6 +143,23 @@ public class ParquetHandler {
         record.put("status_timestamp", weatherStatus.getStatusTimestamp());
         record.put("weather", weatherRecord);
         return record;
+    }
+
+    // Create WeatherStatus object from Parquet record
+    private WeatherStatus createWeatherStatus(GenericData.Record record) {
+        long stationId = (long) record.get("station_id");
+        long serialNo = (long) record.get("s_no");
+        String batteryStatus = (String) record.get("battery_status");
+        long statusTimestamp = (long) record.get("status_timestamp");
+
+        GenericData.Record weatherRecord = (GenericData.Record) record.get("weather");
+        int humidity = (int) weatherRecord.get("humidity");
+        int temperature = (int) weatherRecord.get("temperature");
+        int windSpeed =  (int) weatherRecord.get("wind_speed");
+
+        Weather weather = new Weather(humidity, temperature, windSpeed);
+        WeatherStatus weatherStatus = new WeatherStatus(stationId, serialNo, batteryStatus, statusTimestamp, weather);
+        return weatherStatus;
     }
 
     // Create folder if it doesn't exist

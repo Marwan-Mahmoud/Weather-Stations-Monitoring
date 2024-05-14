@@ -3,8 +3,8 @@
   "name": "SensorData",
   "namespace": "your.namespace",
   "fields": [
-    {"name": "station_id", "type": "int"},
-    {"name": "s_no", "type": "int"},
+    {"name": "station_id", "type": "long"},
+    {"name": "s_no", "type": "long"},
     {"name": "battery_status", "type": "string"},
     {"name": "status_timestamp", "type": "long"},
     {
