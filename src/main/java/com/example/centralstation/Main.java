@@ -9,7 +9,6 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 
-import com.example.Archive.ParquetHandler;
 import com.example.weatherstation.WeatherStatus;
 import com.google.gson.Gson;
 
@@ -23,21 +22,11 @@ public class Main {
         props.put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
 
         Gson gson = new Gson();
-
         KafkaConsumer<Long, String> consumer = new KafkaConsumer<>(props);
         consumer.subscribe(Collections.singletonList("weather"));
-
+        
         try {
-            ParquetHandler archiver = new ParquetHandler(20, "archived_data");
-
-            // Flush buffers on shutdown
-            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                try {
-                    archiver.flushBuffers();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }));
+            CentralStation centralStation = new CentralStation();
 
             // Start consuming messages
             while (true) {
@@ -45,7 +34,7 @@ public class Main {
                 for (ConsumerRecord<Long, String> record : records) {
                     System.out.println("Received message: " + record.value());
                     WeatherStatus weatherStatus = gson.fromJson(record.value(), WeatherStatus.class);
-                    archiver.storeRecordInBuffer(weatherStatus);
+                    centralStation.archive(weatherStatus);
                 }
             }
         } catch (IOException e) {

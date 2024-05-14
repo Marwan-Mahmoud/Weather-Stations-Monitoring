@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
+import java.util.function.Consumer;
 
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
@@ -27,14 +28,16 @@ public class ParquetHandler {
     private HashMap<Long, Integer> stationIdToBatchNumber; // stationId --> batch number
     private HashMap<Long, ParquetWriter<GenericData.Record>> stationIdToWriter; // stationId --> Parquet writer
     private String outputPath;
+    private Consumer<String> callback;
 
-    public ParquetHandler(int batchSize, String outputPath) throws IOException {
+    public ParquetHandler(int batchSize, String outputPath, Consumer<String> callback) throws IOException {
         BATCH_SIZE = batchSize;
         SCHEMA = new Schema.Parser().parse(new File("avro.avsc"));
         this.outputPath = outputPath;
         stationIdToBuffer = new HashMap<>();
         stationIdToBatchNumber = new HashMap<>();
         stationIdToWriter = new HashMap<>();
+        this.callback = callback;
     }
 
     // Store the WeatherStatus object in a buffer
@@ -57,13 +60,15 @@ public class ParquetHandler {
             writeParquet(writer, stationBuffer);
             writer.close();
 
+            // Call callback function
+            callback.accept(getParquetFile(stationId, outputPath).toString());
+
             // Update batch number
             int currentBatchNumber = stationIdToBatchNumber.get(stationId);
             stationIdToBatchNumber.put(stationId, currentBatchNumber + 1);
 
             // Create new writer
             stationIdToWriter.put(stationId, createParquetWriter(stationId));
-
             // Clear buffer
             stationBuffer.clear();
         }
