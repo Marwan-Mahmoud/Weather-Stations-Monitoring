@@ -14,8 +14,9 @@ public class TestCase {
                 , v2 = "Temp2123456789123456789123456789123456789123456789123456789"
                 , v3 = "T3";
 
-        putAndGetTester(bitCask, k1, v1);
         putAndGetTester(bitCask, k2, v2);
+        putAndGetTester(bitCask, k1, v1);
+
         putAndGetTester(bitCask, k3, v3);
 
         bitCask.compact();

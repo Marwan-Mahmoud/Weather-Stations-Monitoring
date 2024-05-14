@@ -27,7 +27,7 @@ public class Main {
         }, 15, 15, TimeUnit.SECONDS);
 
         // Simulate multiple readers
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 10; i++) {
             new Thread(() -> {
                 while (true) {
                     int r = new Random().nextInt(10) + 1;
@@ -48,7 +48,7 @@ public class Main {
                         System.out.println("Key " + r + " not found");
 
                     try {
-                        Thread.sleep(10000);
+                        Thread.sleep(7000);
                     }
                     catch (InterruptedException e) {
                         e.printStackTrace();
@@ -88,7 +88,7 @@ public class Main {
                 testArray[r] = randomString;
 
                 try {
-                    Thread.sleep(10000); // Simulate writer's work
+                    Thread.sleep(5000); // Simulate writer's work
                 }
                 catch (InterruptedException e) {
                     e.printStackTrace();

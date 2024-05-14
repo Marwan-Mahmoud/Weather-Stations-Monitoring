@@ -9,6 +9,7 @@ import java.io.*;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 
@@ -47,7 +48,7 @@ public class FileReader {
         BufferedInputStream bufferedInputStream = new BufferedInputStream(new FileInputStream(databasePath + fileID));
         byte[] bytes = bufferedInputStream.readAllBytes();
 
-        Map<Integer, byte[]> keyToValue = new HashMap<>();
+        Map<Integer, byte[]> keyToValue = new LinkedHashMap<>();
 
         int currentPosition = 0;
         while (currentPosition < bytes.length) {

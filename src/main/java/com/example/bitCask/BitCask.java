@@ -6,16 +6,11 @@ import com.example.bitCask.models.DataFileEntry;
 import com.example.bitCask.models.PlaceMetaData;
 import com.example.bitCask.models.ValueMetaData;
 
-import javax.xml.crypto.Data;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-
 
 public class BitCask {
     String databasePath;
@@ -24,12 +19,12 @@ public class BitCask {
 
 
     public BitCask(){
-        this.keyDir = new ConcurrentHashMap<>();
+        this.keyDir = new LinkedHashMap<>();
     }
 
     public void open(String path){
         this.databasePath = path;
-        this.keyDir = new ConcurrentHashMap<>();
+        this.keyDir = new LinkedHashMap<>();
         this.fileWriter = new FileWriter(path);
         FileReader.setDatabasePath(path);
         reBuildDatabase();
@@ -72,8 +67,8 @@ public class BitCask {
         String activeFileName = toBeCompactedFiles.getLast().getName().split("\\.")[0];
         File firstFile = toBeCompactedFiles.getFirst();
 
-        Map<Integer, ValueMetaData> newKeyDir = new ConcurrentHashMap<>();
-        Map<Integer, byte[]> keyToValue = new ConcurrentHashMap<>();
+        Map<Integer, ValueMetaData> newKeyDir = new LinkedHashMap<>();
+        Map<Integer, byte[]> keyToValue = new LinkedHashMap<>();
         readAllFilesContent(newKeyDir, keyToValue, toBeCompactedFiles);
 
         String compactedReplicaFileName = firstFile.getPath() + 'z';
