@@ -1,10 +1,8 @@
-FROM openjdk:19-jdk-alpine
+FROM openjdk:21-jdk
 
 WORKDIR /app
 
 COPY centralstation.jar /app
 COPY avro.avsc /app
-
-RUN apk add --upgrade gcompat
 
 CMD ["java", "-jar", "centralstation.jar"]

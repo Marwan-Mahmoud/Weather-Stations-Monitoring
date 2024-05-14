@@ -17,7 +17,7 @@ import co.elastic.clients.transport.rest_client.RestClientTransport;
 
 public class ElasticsearchHandler {
 
-    private static final String SERVER_URL = "http://localhost:9200";
+    private static final String SERVER_URL = "http://elastic-kibana:9200";
     private RestClient restClient;
     private ElasticsearchClient esClient;
 
