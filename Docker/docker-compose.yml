@@ -28,7 +28,7 @@ services:
 
   weather-station1:
     image: weather-station
-    command: [ "1" ]
+    command: [ "1", "52.52", "13.41" ]
     depends_on:
       - kafka
 
