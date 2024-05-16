@@ -1,6 +1,7 @@
 package com.example.weatherstation;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.util.Properties;
 import java.util.Random;
 import java.util.concurrent.Executors;
@@ -24,7 +25,12 @@ public class Main {
             station_id = Long.parseLong(args[0]);
             String latitude = args[1];
             String longitude = args[2];
-            weatherStation = new WeatherStationAPI(station_id, latitude, longitude);
+            try {
+                weatherStation = new WeatherStationAPI(station_id, latitude, longitude);
+            } catch (MalformedURLException e) {
+                e.printStackTrace();
+                return;
+            }
         } else {
             System.out.println("Usage: <station_id> [<latitude> <longitude>]");
             System.exit(1);
