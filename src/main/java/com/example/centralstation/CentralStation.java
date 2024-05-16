@@ -23,7 +23,7 @@ public class CentralStation {
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try {
-                archiver.flushBuffers();
+                archiver.close();
                 esHandler.close();
             } catch (Exception e) {
                 e.printStackTrace();

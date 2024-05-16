@@ -1,5 +1,6 @@
 package com.example.Archive;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.time.LocalDate;
@@ -7,6 +8,9 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import org.apache.avro.Schema;
@@ -21,7 +25,7 @@ import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 import com.example.weatherstation.Weather;
 import com.example.weatherstation.WeatherStatus;
 
-public class ParquetHandler {
+public class ParquetHandler implements Closeable {
     private final int BATCH_SIZE;
     private final Schema SCHEMA;
     private HashMap<Long, Queue<WeatherStatus>> stationIdToBuffer; // stationId --> buffer
@@ -29,6 +33,7 @@ public class ParquetHandler {
     private HashMap<Long, ParquetWriter<GenericData.Record>> stationIdToWriter; // stationId --> Parquet writer
     private String outputPath;
     private Consumer<String> callback;
+    private ExecutorService executor;
 
     public ParquetHandler(int batchSize, String outputPath, Consumer<String> callback) throws IOException {
         BATCH_SIZE = batchSize;
@@ -38,6 +43,7 @@ public class ParquetHandler {
         stationIdToBatchNumber = new HashMap<>();
         stationIdToWriter = new HashMap<>();
         this.callback = callback;
+        executor = Executors.newCachedThreadPool();
     }
 
     // Store the WeatherStatus object in a buffer
@@ -60,20 +66,15 @@ public class ParquetHandler {
         if (stationBuffer.size() >= BATCH_SIZE) {
             // Write Parquet file
             ParquetWriter<GenericData.Record> writer = stationIdToWriter.get(stationId);
-            writeParquet(writer, stationBuffer);
-            writer.close();
-
-            // Call callback function
-            callback.accept(getParquetFile(stationId, outputPath).toString());
+            writeParquet(writer, stationBuffer, getParquetFile(stationId, outputPath).toString());
 
             // Update batch number
             int currentBatchNumber = stationIdToBatchNumber.get(stationId);
             stationIdToBatchNumber.put(stationId, currentBatchNumber + 1);
 
-            // Create new writer
+            // Create new writer and buffer
             stationIdToWriter.put(stationId, createParquetWriter(stationId));
-            // Clear buffer
-            stationBuffer.clear();
+            stationIdToBuffer.put(stationId, new LinkedList<>());
         }
     }
 
@@ -93,13 +94,23 @@ public class ParquetHandler {
     }
 
     // Write WeatherStatus objects to Parquet file
-    private void writeParquet(ParquetWriter<GenericData.Record> writer, Queue<WeatherStatus> weatherStatusQueue)
-            throws IOException {
-        while (!weatherStatusQueue.isEmpty()) {
-            WeatherStatus weatherStatus = weatherStatusQueue.poll();
-            GenericData.Record record = createParquetRecord(weatherStatus, SCHEMA);
-            writer.write(record);
-        }
+    private void writeParquet(ParquetWriter<GenericData.Record> writer, Queue<WeatherStatus> weatherStatusQueue,
+            String path) {
+        executor.execute(() -> {
+            try {
+                while (!weatherStatusQueue.isEmpty()) {
+                    WeatherStatus weatherStatus = weatherStatusQueue.poll();
+                    GenericData.Record record = createParquetRecord(weatherStatus, SCHEMA);
+                    writer.write(record);
+                }
+                writer.close();
+
+                // Call callback function
+                callback.accept(path);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
     }
 
     public void flushBuffers() throws IOException {
@@ -107,8 +118,7 @@ public class ParquetHandler {
             Queue<WeatherStatus> stationBuffer = stationIdToBuffer.get(stationId);
             if (!stationBuffer.isEmpty()) {
                 ParquetWriter<GenericData.Record> writer = stationIdToWriter.get(stationId);
-                writeParquet(writer, stationBuffer);
-                writer.close();
+                writeParquet(writer, stationBuffer, getParquetFile(stationId, outputPath).toString());
             }
         }
     }
@@ -161,7 +171,7 @@ public class ParquetHandler {
         GenericData.Record weatherRecord = (GenericData.Record) record.get("weather");
         int humidity = (int) weatherRecord.get("humidity");
         int temperature = (int) weatherRecord.get("temperature");
-        int windSpeed =  (int) weatherRecord.get("wind_speed");
+        int windSpeed = (int) weatherRecord.get("wind_speed");
 
         Weather weather = new Weather(humidity, temperature, windSpeed);
         WeatherStatus weatherStatus = new WeatherStatus(stationId, serialNo, batteryStatus, statusTimestamp, weather);
@@ -172,5 +182,16 @@ public class ParquetHandler {
     private void createFolder(String path) {
         File f = new File(path);
         f.mkdirs();
+    }
+
+    @Override
+    public void close() throws IOException {
+        flushBuffers();
+        executor.shutdown();
+        try {
+            executor.awaitTermination(10, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 }
