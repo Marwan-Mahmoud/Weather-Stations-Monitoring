@@ -94,8 +94,7 @@ public class ParquetHandler implements Closeable {
     }
 
     // Write WeatherStatus objects to Parquet file
-    private void writeParquet(ParquetWriter<GenericData.Record> writer, Queue<WeatherStatus> weatherStatusQueue,
-            String path) {
+    private void writeParquet(ParquetWriter<GenericData.Record> writer, Queue<WeatherStatus> weatherStatusQueue, String path) {
         executor.execute(() -> {
             try {
                 while (!weatherStatusQueue.isEmpty()) {
@@ -189,7 +188,9 @@ public class ParquetHandler implements Closeable {
         flushBuffers();
         executor.shutdown();
         try {
-            executor.awaitTermination(10, TimeUnit.SECONDS);
+            boolean terminated = executor.awaitTermination(10, TimeUnit.SECONDS);
+            if (!terminated)
+                System.err.println("Timeout occurred before all tasks were completed");
         } catch (InterruptedException e) {
             e.printStackTrace();
         }

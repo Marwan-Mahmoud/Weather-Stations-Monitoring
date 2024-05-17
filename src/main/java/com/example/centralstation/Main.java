@@ -29,6 +29,15 @@ public class Main {
         try {
             CentralStation centralStation = new CentralStation();
 
+            // Close resources on shutdown
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                try {
+                    centralStation.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }));
+
             // Start consuming messages
             while (true) {
                 ConsumerRecords<Long, String> records = consumer.poll(Duration.ofMillis(1000));

@@ -1,5 +1,6 @@
 package com.example.centralstation;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.List;
 
@@ -7,7 +8,7 @@ import com.example.Archive.ParquetHandler;
 import com.example.elasticsearch.ElasticsearchHandler;
 import com.example.weatherstation.WeatherStatus;
 
-public class CentralStation {
+public class CentralStation implements Closeable {
     private ParquetHandler archiver;
     private ElasticsearchHandler esHandler;
 
@@ -20,15 +21,6 @@ public class CentralStation {
             }
         });
         esHandler = new ElasticsearchHandler();
-
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            try {
-                archiver.close();
-                esHandler.close();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }));
     }
 
     public void archive(WeatherStatus weatherStatus) throws IOException {
@@ -38,5 +30,11 @@ public class CentralStation {
     public void indexWeatherStatuses(String path) throws IOException {
         List<WeatherStatus> weatherStatuses = archiver.readParquetFile(path);
         esHandler.bulkIndex(weatherStatuses);
+    }
+
+    @Override
+    public void close() throws IOException {
+        archiver.close();
+        esHandler.close();
     }
 }
