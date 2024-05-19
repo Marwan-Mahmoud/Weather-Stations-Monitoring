@@ -92,3 +92,4 @@ services:
       - elastic-kibana
     volumes:
       - ../archived_data:/app/archived_data
+      - ../database:/app/database

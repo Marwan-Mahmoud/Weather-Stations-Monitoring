@@ -1,19 +1,23 @@
 package com.example.bitCask.helpers;
 
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+
 import com.example.bitCask.models.DataFileEntry;
 import com.example.bitCask.models.PlaceMetaData;
 import com.example.bitCask.models.ValueMetaData;
 
-import java.io.*;
-import java.nio.ByteBuffer;
-
 public class FileWriter {
     private static final int MAX_FILE_SIZE = 64 * 1024; // 64 KB
-    static String databasePath;
-    FileOutputStream fileOutputStream, fileOutputStreamReplica;
-    File file, fileReplica;
+    private static String databasePath;
+    private FileOutputStream fileOutputStream, fileOutputStreamReplica;
+    private File file, fileReplica;
 
-    public FileWriter(String databasePath){
+    public FileWriter(String databasePath) {
         FileWriter.databasePath = databasePath;
         createNewFile();
     }
@@ -24,9 +28,9 @@ public class FileWriter {
         return new PlaceMetaData(file.getName(), valuePosition);
     }
 
-    public PlaceMetaData writeToCompactFile(DataFileEntry dfe, File file) throws FileNotFoundException {
+    public PlaceMetaData writeToCompactFile(DataFileEntry dfe, File file) throws IOException {
         String fileName = databasePath + file.getName().split("\\.")[0] + ".replica";
-        if(file.getName().endsWith("z"))
+        if (file.getName().endsWith("z"))
             fileName += "z";
 
         File fileReplica = new File(fileName);
@@ -40,17 +44,16 @@ public class FileWriter {
         return new PlaceMetaData(file.getName(), valuePosition);
     }
 
-    private void writeToHintFile(String fileName, ValueMetaData vmd, byte[] key) throws FileNotFoundException {
+    private void writeToHintFile(String fileName, ValueMetaData vmd, byte[] key) throws IOException {
         String hintName = databasePath + fileName.split("\\.")[0] + ".hint";
-        if(fileName.endsWith("z"))
+        if (fileName.endsWith("z"))
             hintName += "z";
 
         File hintFile = new File(hintName);
         if (!hintFile.exists()) {
             try {
                 hintFile.createNewFile();
-            }
-            catch (IOException e) {
+            } catch (IOException e) {
                 e.getCause();
             }
         }
@@ -68,11 +71,11 @@ public class FileWriter {
             bufferedOutputStream.write(byteArray);
             bufferedOutputStream.write(toBeWritten);
             bufferedOutputStream.flush();
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             System.out.println("Failed to write to hint file");
             e.getCause();
         }
+        bufferedOutputStream.close();
     }
 
     private long write(File file, FileOutputStream fos, FileOutputStream rfos, DataFileEntry dfe) throws FileNotFoundException {
@@ -90,8 +93,7 @@ public class FileWriter {
             bufferedOutputStreamReplica.write(byteArray);
             bufferedOutputStream.flush();
             bufferedOutputStreamReplica.flush();
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             System.out.println("Error Writing to file");
         }
 
@@ -105,15 +107,14 @@ public class FileWriter {
             bufferedOutputStreamReplica.write(toBeWritten);
             bufferedOutputStream.flush();
             bufferedOutputStreamReplica.flush();
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             System.out.println("Error Writing to file");
         }
 
         return valuePositionInFile;
     }
 
-    private void createNewFile(){
+    private void createNewFile() {
         long currentTime = System.currentTimeMillis();
         this.file = new File(databasePath + currentTime + ".data");
         this.fileReplica = new File(databasePath + currentTime + ".replica");
@@ -121,15 +122,14 @@ public class FileWriter {
         try {
             this.fileOutputStream = new FileOutputStream(this.file, true);
             this.fileOutputStreamReplica = new FileOutputStream(this.fileReplica, true);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             System.out.println("Error Opening file");
         }
     }
 
-    private void checkMaxSize(){
-        if(this.file.length() >= MAX_FILE_SIZE) {
-            System.out.println("File size exceeded max...Creating a new file");
+    private void checkMaxSize() {
+        if (this.file.length() >= MAX_FILE_SIZE) {
+            System.out.println("File size exceeded max... Creating a new file");
             createNewFile();
         }
     }
