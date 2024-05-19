@@ -29,6 +29,7 @@ public class Main {
                 weatherStation = new WeatherStationAPI(station_id, latitude, longitude);
             } catch (MalformedURLException e) {
                 e.printStackTrace();
+                System.exit(1);
                 return;
             }
         } else {
