@@ -8,7 +8,7 @@ import java.io.*;
 import java.nio.ByteBuffer;
 
 public class FileWriter {
-    final int MAX_FILE_SIZE = 64;
+    private static final int MAX_FILE_SIZE = 64 * 1024; // 64 KB
     static String databasePath;
     FileOutputStream fileOutputStream, fileOutputStreamReplica;
     File file, fileReplica;
@@ -59,7 +59,7 @@ public class FileWriter {
 
         try {
             byte[] toBeWritten = vmd.ValueToBytes(key);
-            ValueMetaData test = ValueMetaData.BytesToValue(toBeWritten, fileName);
+            // ValueMetaData test = ValueMetaData.BytesToValue(toBeWritten, fileName);
 //            System.out.println("Writing to hint file " + "Key: " + ByteBuffer.wrap(key).getInt() + " time: " + test.getTimestamp()+ " " + "fileID " + test.getFileID());
             int sz = toBeWritten.length;
             ByteBuffer buffer = ByteBuffer.allocate(Integer.BYTES);
@@ -109,7 +109,6 @@ public class FileWriter {
         catch (Exception e) {
             System.out.println("Error Writing to file");
         }
-
 
         return valuePositionInFile;
     }

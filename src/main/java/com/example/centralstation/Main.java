@@ -28,6 +28,7 @@ public class Main {
 
         try {
             CentralStation centralStation = new CentralStation();
+            centralStation.initBitCask();
 
             // Close resources on shutdown
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -45,6 +46,7 @@ public class Main {
                     System.out.println("Received message: " + record.value());
                     WeatherStatus weatherStatus = gson.fromJson(record.value(), WeatherStatus.class);
                     centralStation.archive(weatherStatus);
+                    centralStation.putInBitCask(weatherStatus.getStationId(), record.value());
                 }
             }
         } catch (IOException e) {

@@ -16,6 +16,4 @@ public class PlaceMetaData {
     public long getValuePosition() {
         return valuePosition;
     }
-
-
 }
