@@ -1,6 +1,7 @@
 package com.example.centralstation;
 
 import java.io.Closeable;
+import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
@@ -25,6 +26,19 @@ public class CentralStation implements Closeable {
 
     public void archive(WeatherStatus weatherStatus) throws IOException {
         archiver.storeRecordInBuffer(weatherStatus);
+    }
+
+    public void indexAllArchivedData() throws IOException {
+        File root = new File("archived_data");
+        for (File date : root.listFiles()) {
+            for (File station : date.listFiles()) {
+                for (File file : station.listFiles()) {
+                    if (!file.getName().startsWith(".")) {
+                        indexWeatherStatuses(file.getPath());
+                    }
+                }
+            }
+        }
     }
 
     public void indexWeatherStatuses(String path) throws IOException {

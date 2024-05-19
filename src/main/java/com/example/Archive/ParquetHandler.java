@@ -3,7 +3,7 @@ package com.example.Archive;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -29,7 +29,7 @@ public class ParquetHandler implements Closeable {
     private final int BATCH_SIZE;
     private final Schema SCHEMA;
     private HashMap<Long, Queue<WeatherStatus>> stationIdToBuffer; // stationId --> buffer
-    private HashMap<Long, Integer> stationIdToBatchNumber; // stationId --> batch number
+    private HashMap<Long, String> stationIdToFilePath; // stationId --> file path
     private HashMap<Long, ParquetWriter<GenericData.Record>> stationIdToWriter; // stationId --> Parquet writer
     private String outputPath;
     private Consumer<String> callback;
@@ -40,7 +40,7 @@ public class ParquetHandler implements Closeable {
         SCHEMA = new Schema.Parser().parse(new File("avro.avsc"));
         this.outputPath = outputPath;
         stationIdToBuffer = new HashMap<>();
-        stationIdToBatchNumber = new HashMap<>();
+        stationIdToFilePath = new HashMap<>();
         stationIdToWriter = new HashMap<>();
         this.callback = callback;
         executor = Executors.newCachedThreadPool();
@@ -53,7 +53,7 @@ public class ParquetHandler implements Closeable {
         // Create buffer for station if it doesn't exist
         if (!stationIdToBuffer.containsKey(stationId)) {
             stationIdToBuffer.put(stationId, new LinkedList<>());
-            stationIdToBatchNumber.put(stationId, 1);
+            stationIdToFilePath.put(stationId, getParquetFile(stationId, outputPath).toString());
             stationIdToWriter.put(stationId, createParquetWriter(stationId));
         }
 
@@ -66,11 +66,10 @@ public class ParquetHandler implements Closeable {
         if (stationBuffer.size() >= BATCH_SIZE) {
             // Write Parquet file
             ParquetWriter<GenericData.Record> writer = stationIdToWriter.get(stationId);
-            writeParquet(writer, stationBuffer, getParquetFile(stationId, outputPath).toString());
+            writeParquet(writer, stationBuffer, stationId);
 
-            // Update batch number
-            int currentBatchNumber = stationIdToBatchNumber.get(stationId);
-            stationIdToBatchNumber.put(stationId, currentBatchNumber + 1);
+            // Get new path for Parquet file
+            stationIdToFilePath.put(stationId, getParquetFile(stationId, outputPath).toString());
 
             // Create new writer and buffer
             stationIdToWriter.put(stationId, createParquetWriter(stationId));
@@ -94,7 +93,8 @@ public class ParquetHandler implements Closeable {
     }
 
     // Write WeatherStatus objects to Parquet file
-    private void writeParquet(ParquetWriter<GenericData.Record> writer, Queue<WeatherStatus> weatherStatusQueue, String path) {
+    private void writeParquet(ParquetWriter<GenericData.Record> writer, Queue<WeatherStatus> weatherStatusQueue, Long stationId) {
+        String path = stationIdToFilePath.get(stationId);
         executor.execute(() -> {
             try {
                 while (!weatherStatusQueue.isEmpty()) {
@@ -117,7 +117,7 @@ public class ParquetHandler implements Closeable {
             Queue<WeatherStatus> stationBuffer = stationIdToBuffer.get(stationId);
             if (!stationBuffer.isEmpty()) {
                 ParquetWriter<GenericData.Record> writer = stationIdToWriter.get(stationId);
-                writeParquet(writer, stationBuffer, getParquetFile(stationId, outputPath).toString());
+                writeParquet(writer, stationBuffer, stationId);
             }
         }
     }
@@ -134,13 +134,14 @@ public class ParquetHandler implements Closeable {
     private Path getParquetFile(long stationId, String outputPath) {
         createFolder(outputPath);
 
-        LocalDate date = LocalDate.now();
-        outputPath = outputPath + "/" + date + "/station_" + stationId;
+        LocalDateTime dateTime = LocalDateTime.now();
+        outputPath = outputPath + "/" + dateTime.toLocalDate() + "/station_" + stationId;
         createFolder(outputPath);
 
-        // Generate Parquet file path
-        int batchNumber = stationIdToBatchNumber.get(stationId);
-        Path file = new Path(outputPath + "/output_" + stationId + "_" + batchNumber + ".parquet");
+        int hour = dateTime.getHour();
+        int minute = dateTime.getMinute();
+        outputPath = outputPath + "/output_" + hour + "." + minute + ".parquet";
+        Path file = new Path(outputPath);
         return file;
     }
 
