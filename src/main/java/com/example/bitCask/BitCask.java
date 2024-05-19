@@ -13,16 +13,15 @@ import java.nio.ByteBuffer;
 import java.util.*;
 
 public class BitCask {
-    String databasePath;
-    Map<Integer, ValueMetaData> keyDir;
-    FileWriter fileWriter;;
+    private String databasePath;
+    private Map<Integer, ValueMetaData> keyDir;
+    private FileWriter fileWriter;
 
-
-    public BitCask(){
+    public BitCask() {
         this.keyDir = new LinkedHashMap<>();
     }
 
-    public void open(String path){
+    public void open(String path) {
         this.databasePath = path;
         this.keyDir = new LinkedHashMap<>();
         this.fileWriter = new FileWriter(path);
@@ -30,10 +29,10 @@ public class BitCask {
         reBuildDatabase();
     }
 
-    private void reBuildDatabase(){
+    private void reBuildDatabase() {
         File database = new File(databasePath);
         File[] files = database.listFiles();
-        if(files == null){
+        if (files == null) {
             return;
         }
 
@@ -46,18 +45,17 @@ public class BitCask {
                     FileReader.readHintFile(hintFile, this.keyDir);
                 else
                     FileReader.readDataFileEntries(file.getName(), keyDir);
-            }
-            catch (IOException e) {
+            } catch (IOException e) {
                 e.getCause();
             }
         }
     }
 
-    void compact() throws IOException {
+    public void compact() throws IOException {
         File database = new File(databasePath);
         File[] files = database.listFiles();
 
-        if(files == null || files.length < 4) {
+        if (files == null || files.length < 6) {
             System.out.println("No Need For Compaction");
             return;
         }
@@ -99,10 +97,9 @@ public class BitCask {
         hintFile.renameTo(renamedCompactedHintFile);
 
         System.out.println("Compaction Process Completed");
-
     }
 
-    void updateKeyDir(Map<Integer, ValueMetaData> mergedFileKeyDir, File mergedDataFile) {
+    private void updateKeyDir(Map<Integer, ValueMetaData> mergedFileKeyDir, File mergedDataFile) {
         for (Map.Entry<Integer, ValueMetaData> entry : mergedFileKeyDir.entrySet()) {
             entry.getValue().setFileID(mergedDataFile.getName());
             // Same timestamp but different fileID then replace it
@@ -149,19 +146,18 @@ public class BitCask {
                 .toList();
     }
 
-    byte[] get(byte[] key){
+    public byte[] get(byte[] key) {
         int keyInt = ByteBuffer.wrap(key).getInt();
 
-        if(!keyDir.containsKey(keyInt)){
+        if (!keyDir.containsKey(keyInt)) {
             return null;
-        }
-        else{
+        } else {
             ValueMetaData vmd = keyDir.get(keyInt);
             return FileReader.readDataFromFile(vmd.getFileID(), vmd.getValuePosition(), vmd.getValueSize());
         }
     }
 
-    void put(byte[] key, byte[] value) throws FileNotFoundException {
+    public void put(byte[] key, byte[] value) throws FileNotFoundException {
         ValueMetaData vmd = putHandler(key, value);
         int keyInt = ByteBuffer.wrap(key).getInt();
         keyDir.put(keyInt, vmd);

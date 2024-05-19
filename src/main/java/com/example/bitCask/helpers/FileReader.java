@@ -8,17 +8,15 @@ import java.io.RandomAccessFile;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-
 public class FileReader {
     static String databasePath;
-    public FileReader(String databasePath){
+
+    public FileReader(String databasePath) {
         FileReader.databasePath = databasePath;
     }
-
 
     public static void readHintFile(File hintFile, Map<Integer, ValueMetaData> keyDir) throws IOException {
         BufferedInputStream bufferedInputStream = new BufferedInputStream(new FileInputStream(hintFile));
@@ -39,9 +37,8 @@ public class FileReader {
                 keyDir.put(key, currentEntryMetaData);
             }
         }
+        bufferedInputStream.close();
     }
-
-
 
     // Read whole data file and update the key to value map accordingly
     public static Map<Integer, byte[]> readDataFileEntries(String fileID, Map<Integer, ValueMetaData> newKeyDir) throws IOException {
@@ -65,6 +62,7 @@ public class FileReader {
                 newKeyDir.put(key, new ValueMetaData(fileID, currentDataFileEntry.getValueSize(), currentPosition - currentDataFileEntry.getValueSize(), currentDataFileEntry.getTimestamp()));
             }
         }
+        bufferedInputStream.close();
         return keyToValue;
     }
 
@@ -74,8 +72,7 @@ public class FileReader {
         try (RandomAccessFile randomAccessFile = new RandomAccessFile(new File(databasePath + fileID), "r")) {
             randomAccessFile.seek(valuePosition);
             randomAccessFile.read(value, 0, valueSize);
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             System.out.println("Error reading value from disk");
         }
         return value;
