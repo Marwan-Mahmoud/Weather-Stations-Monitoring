@@ -6,7 +6,6 @@ import com.example.bitCask.models.DataFileEntry;
 import com.example.bitCask.models.PlaceMetaData;
 import com.example.bitCask.models.ValueMetaData;
 
-import javax.xml.crypto.Data;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -16,21 +15,19 @@ import java.util.*;
 public class BitCask {
     String databasePath;
     Map<Integer, ValueMetaData> keyDir;
-    FileWriter fileWriter;
-    boolean isOpen = false;
+    FileWriter fileWriter;;
+
 
     public BitCask(){
-        this.keyDir = new HashMap<>();
+        this.keyDir = new LinkedHashMap<>();
     }
 
     public void open(String path){
         this.databasePath = path;
-        this.keyDir = new HashMap<>();
+        this.keyDir = new LinkedHashMap<>();
         this.fileWriter = new FileWriter(path);
         FileReader.setDatabasePath(path);
-        this.isOpen = true;
         reBuildDatabase();
-
     }
 
     private void reBuildDatabase(){
@@ -60,7 +57,7 @@ public class BitCask {
         File database = new File(databasePath);
         File[] files = database.listFiles();
 
-        if(files == null || files.length < 2) {
+        if(files == null || files.length < 4) {
             System.out.println("No Need For Compaction");
             return;
         }
@@ -70,8 +67,8 @@ public class BitCask {
         String activeFileName = toBeCompactedFiles.getLast().getName().split("\\.")[0];
         File firstFile = toBeCompactedFiles.getFirst();
 
-        Map<Integer, ValueMetaData> newKeyDir = new HashMap<>();
-        Map<Integer, byte[]> keyToValue = new HashMap<>();
+        Map<Integer, ValueMetaData> newKeyDir = new LinkedHashMap<>();
+        Map<Integer, byte[]> keyToValue = new LinkedHashMap<>();
         readAllFilesContent(newKeyDir, keyToValue, toBeCompactedFiles);
 
         String compactedReplicaFileName = firstFile.getPath() + 'z';
@@ -83,11 +80,14 @@ public class BitCask {
         compactedReplicaFile.createNewFile();
         compactedDataFile.createNewFile();
 
+
         writeCompactedFiles(newKeyDir, keyToValue, compactedDataFile);
         deleteFilesAfterCompaction(files, activeFileName);
 
         File renamedCompactedDataFile = new File(compactedDataFileName.substring(0, compactedDataFileName.length() - 1));
         compactedDataFile.renameTo(renamedCompactedDataFile);
+
+        updateKeyDir(newKeyDir, renamedCompactedDataFile);
 
         File renamedCompactedReplicaFile = new File(compactedReplicaFileName.substring(0, compactedReplicaFileName.length() - 1));
         compactedReplicaFile.renameTo(renamedCompactedReplicaFile);
@@ -98,8 +98,8 @@ public class BitCask {
         File renamedCompactedHintFile = new File(hintFileName.substring(0, hintFileName.length() - 1));
         hintFile.renameTo(renamedCompactedHintFile);
 
-        updateKeyDir(newKeyDir, renamedCompactedDataFile);
         System.out.println("Compaction Process Completed");
+
     }
 
     void updateKeyDir(Map<Integer, ValueMetaData> mergedFileKeyDir, File mergedDataFile) {
@@ -147,10 +147,6 @@ public class BitCask {
                     return (int) (t1 - t2);
                 })
                 .toList();
-    }
-
-    void close(){
-        this.isOpen = false;
     }
 
     byte[] get(byte[] key){
