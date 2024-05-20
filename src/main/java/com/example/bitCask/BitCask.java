@@ -1,16 +1,19 @@
 package com.example.bitCask;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
 import com.example.bitCask.helpers.FileReader;
 import com.example.bitCask.helpers.FileWriter;
 import com.example.bitCask.models.DataFileEntry;
 import com.example.bitCask.models.PlaceMetaData;
 import com.example.bitCask.models.ValueMetaData;
-
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.*;
 
 public class BitCask {
     private String databasePath;
@@ -109,7 +112,7 @@ public class BitCask {
         }
     }
 
-    private void deleteFilesAfterCompaction(File[] files, String activeFileName){
+    private void deleteFilesAfterCompaction(File[] files, String activeFileName) {
         Arrays.stream(files)
                 .filter(file -> !file.getName().endsWith("z") &&
                         !file.getName().startsWith(activeFileName) &&
@@ -117,7 +120,7 @@ public class BitCask {
                 .forEach(File::delete);
     }
 
-    private void writeCompactedFiles(Map<Integer, ValueMetaData> newKeyDir, Map<Integer, byte[]> keyToValue, File compactedDataFile) throws FileNotFoundException {
+    private void writeCompactedFiles(Map<Integer, ValueMetaData> newKeyDir, Map<Integer, byte[]> keyToValue, File compactedDataFile) throws IOException {
         for (Map.Entry<Integer, byte[]> entry : keyToValue.entrySet()) {
             byte[] key = ByteBuffer.allocate(4).putInt(entry.getKey()).array();
             DataFileEntry dfe = new DataFileEntry(key.length, entry.getValue().length, key, entry.getValue(), newKeyDir.get(entry.getKey()).getTimestamp());
@@ -134,7 +137,7 @@ public class BitCask {
         }
     }
 
-    private List<File> filterFiles(File[] files, String extension){
+    private List<File> filterFiles(File[] files, String extension) {
         return Arrays.stream(files)
                 .filter(file -> file.getName().endsWith(extension))
                 .sorted((f1, f2) -> {

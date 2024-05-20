@@ -20,6 +20,7 @@ public class Main {
         props.put("enable.auto.commit", "true");
         props.put("key.deserializer", "org.apache.kafka.common.serialization.LongDeserializer");
         props.put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
+        props.put("auto.offset.reset", "earliest");
 
         KafkaConsumer<Long, String> consumer = new KafkaConsumer<>(props);
         consumer.subscribe(Collections.singletonList("weather"));
@@ -29,6 +30,15 @@ public class Main {
         try {
             CentralStation centralStation = new CentralStation();
             centralStation.initBitCask();
+
+            Thread indexThread = new Thread(() -> {
+                try {
+                    centralStation.indexAllArchivedData();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            });
+            indexThread.start();
 
             // Close resources on shutdown
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {

@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert
+    kompose.version: 1.26.0 (40646f47)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: central-station
+  name: central-station
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: central-station
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert
+        kompose.version: 1.26.0 (40646f47)
+      creationTimestamp: null
+      labels:
+        io.kompose.service: central-station
+    spec:
+      containers:
+        - image: central-station
+          name: central-station
+          imagePullPolicy: Never
+          resources: {}
+          volumeMounts:
+            - mountPath: /app/archived_data
+              name: central-station-claim0
+            - mountPath: /app/database
+              name: central-station-claim1
+      restartPolicy: Always
+      volumes:
+        - name: central-station-claim0
+          persistentVolumeClaim:
+            claimName: central-station-claim0
+        - name: central-station-claim1
+          persistentVolumeClaim:
+            claimName: central-station-claim1
+status: {}

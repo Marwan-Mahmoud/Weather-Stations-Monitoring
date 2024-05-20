@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: weather-station2
+  labels:
+    component: station2
+    
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: station2
+  template:
+    metadata:
+      labels:
+        component: station2
+    spec:
+      containers:
+        - args:
+            - "2"
+          image: weather-station
+          name: weather-station2
+          imagePullPolicy: Never
+      restartPolicy: Always
+

@@ -1,18 +1,20 @@
 package com.example.bitCask.helpers;
 
-import com.example.bitCask.models.DataFileEntry;
-import com.example.bitCask.models.ValueMetaData;
-
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.io.*;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import com.example.bitCask.models.DataFileEntry;
+import com.example.bitCask.models.ValueMetaData;
+
 public class FileReader {
-    static String databasePath;
+    private static String databasePath;
 
     public FileReader(String databasePath) {
         FileReader.databasePath = databasePath;
@@ -31,9 +33,9 @@ public class FileReader {
 
             currentPosition += 4 + entrySize;
             ValueMetaData currentEntryMetaData = ValueMetaData.BytesToValue(currentEntry, hintFile.getName().split("\\.")[0] + ".data");
-//            System.out.println("Read hint file" + "Key: " + key + " time: " + currentEntryMetaData.getTimestamp() + "fileID " + currentEntryMetaData.getFileID());
+
             // Map doesn't contain the entry or contains an entry with a lower timestamp (outdated)
-            if(!keyDir.containsKey(key) || keyDir.get(key).getTimestamp() <= currentEntryMetaData.getTimestamp()){
+            if (!keyDir.containsKey(key) || keyDir.get(key).getTimestamp() <= currentEntryMetaData.getTimestamp()) {
                 keyDir.put(key, currentEntryMetaData);
             }
         }
@@ -57,7 +59,7 @@ public class FileReader {
             int key = ByteBuffer.wrap(currentDataFileEntry.getKey()).getInt();
 
             // Map doesn't contain the entry or contains an entry with a lower timestamp (outdated)
-            if(!newKeyDir.containsKey(key) || newKeyDir.get(key).getTimestamp() <= currentDataFileEntry.getTimestamp()){
+            if (!newKeyDir.containsKey(key) || newKeyDir.get(key).getTimestamp() <= currentDataFileEntry.getTimestamp()) {
                 keyToValue.put(key, currentDataFileEntry.getValue());
                 newKeyDir.put(key, new ValueMetaData(fileID, currentDataFileEntry.getValueSize(), currentPosition - currentDataFileEntry.getValueSize(), currentDataFileEntry.getTimestamp()));
             }
@@ -73,7 +75,7 @@ public class FileReader {
             randomAccessFile.seek(valuePosition);
             randomAccessFile.read(value, 0, valueSize);
         } catch (IOException e) {
-            System.out.println("Error reading value from disk");
+            System.err.println("Error reading value from disk");
         }
         return value;
     }

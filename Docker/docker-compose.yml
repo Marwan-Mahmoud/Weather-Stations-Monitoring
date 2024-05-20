@@ -90,3 +90,6 @@ services:
     depends_on:
       - kafka
       - elastic-kibana
+    volumes:
+      - ../archived_data:/app/archived_data
+      - ../database:/app/database
