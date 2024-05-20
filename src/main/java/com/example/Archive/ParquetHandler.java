@@ -123,7 +123,8 @@ public class ParquetHandler implements Closeable {
     }
 
     private ParquetWriter<GenericData.Record> createParquetWriter(long stationId) throws IOException {
-        Path file = getParquetFile(stationId, outputPath);
+        String filePath = stationIdToFilePath.get(stationId);
+        Path file = new Path(filePath);
         ParquetWriter<GenericData.Record> writer = AvroParquetWriter.<GenericData.Record>builder(file)
                 .withSchema(SCHEMA)
                 .withCompressionCodec(CompressionCodecName.SNAPPY)
