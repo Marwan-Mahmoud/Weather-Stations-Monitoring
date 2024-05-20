@@ -33,7 +33,7 @@ public class FileReader {
 
             currentPosition += 4 + entrySize;
             ValueMetaData currentEntryMetaData = ValueMetaData.BytesToValue(currentEntry, hintFile.getName().split("\\.")[0] + ".data");
-//            System.out.println("Read hint file" + "Key: " + key + " time: " + currentEntryMetaData.getTimestamp() + "fileID " + currentEntryMetaData.getFileID());
+
             // Map doesn't contain the entry or contains an entry with a lower timestamp (outdated)
             if (!keyDir.containsKey(key) || keyDir.get(key).getTimestamp() <= currentEntryMetaData.getTimestamp()) {
                 keyDir.put(key, currentEntryMetaData);
@@ -75,7 +75,7 @@ public class FileReader {
             randomAccessFile.seek(valuePosition);
             randomAccessFile.read(value, 0, valueSize);
         } catch (IOException e) {
-            System.out.println("Error reading value from disk");
+            System.err.println("Error reading value from disk");
         }
         return value;
     }

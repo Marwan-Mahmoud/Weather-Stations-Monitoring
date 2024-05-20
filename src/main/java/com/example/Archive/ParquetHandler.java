@@ -3,7 +3,7 @@ package com.example.Archive;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -134,13 +134,12 @@ public class ParquetHandler implements Closeable {
     private Path getParquetFile(long stationId, String outputPath) {
         createFolder(outputPath);
 
-        LocalDateTime dateTime = LocalDateTime.now();
-        outputPath = outputPath + "/" + dateTime.toLocalDate() + "/station_" + stationId;
+        LocalDate date = LocalDate.now();
+        outputPath = outputPath + "/" + date + "/station_" + stationId;
         createFolder(outputPath);
 
-        int hour = dateTime.getHour();
-        int minute = dateTime.getMinute();
-        outputPath = outputPath + "/output_" + hour + "." + minute + ".parquet";
+        long timestamp = System.currentTimeMillis();
+        outputPath = outputPath + "/output_" + timestamp + ".parquet";
         Path file = new Path(outputPath);
         return file;
     }

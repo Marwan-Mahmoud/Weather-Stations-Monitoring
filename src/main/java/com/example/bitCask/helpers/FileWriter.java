@@ -62,8 +62,6 @@ public class FileWriter {
 
         try {
             byte[] toBeWritten = vmd.ValueToBytes(key);
-            // ValueMetaData test = ValueMetaData.BytesToValue(toBeWritten, fileName);
-//            System.out.println("Writing to hint file " + "Key: " + ByteBuffer.wrap(key).getInt() + " time: " + test.getTimestamp()+ " " + "fileID " + test.getFileID());
             int sz = toBeWritten.length;
             ByteBuffer buffer = ByteBuffer.allocate(Integer.BYTES);
             buffer.putInt(sz);
@@ -72,7 +70,7 @@ public class FileWriter {
             bufferedOutputStream.write(toBeWritten);
             bufferedOutputStream.flush();
         } catch (IOException e) {
-            System.out.println("Failed to write to hint file");
+            System.err.println("Failed to write to hint file");
             e.getCause();
         }
         bufferedOutputStream.close();
@@ -94,13 +92,11 @@ public class FileWriter {
             bufferedOutputStream.flush();
             bufferedOutputStreamReplica.flush();
         } catch (Exception e) {
-            System.out.println("Error Writing to file");
+            System.err.println("Error Writing to file");
         }
 
         // [Timestamp(8 bytes)]-[KeySize(4 bytes)]-[ValueSize(4 bytes)]-[Key]- ***[Value]***
         long valuePositionInFile = file.length() + 8 + 4 + 4 + dfe.getKeySize();
-
-//        writeToHintFile(file.getName(), new ValueMetaData(file.getName(), dfe.getValueSize(), valuePositionInFile, dfe.getTimestamp()), dfe.getKey());
 
         try {
             bufferedOutputStream.write(toBeWritten);
@@ -108,7 +104,7 @@ public class FileWriter {
             bufferedOutputStream.flush();
             bufferedOutputStreamReplica.flush();
         } catch (Exception e) {
-            System.out.println("Error Writing to file");
+            System.err.println("Error Writing to file");
         }
 
         return valuePositionInFile;
@@ -123,7 +119,7 @@ public class FileWriter {
             this.fileOutputStream = new FileOutputStream(this.file, true);
             this.fileOutputStreamReplica = new FileOutputStream(this.fileReplica, true);
         } catch (Exception e) {
-            System.out.println("Error Opening file");
+            System.err.println("Error Opening file");
         }
     }
 
